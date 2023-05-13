@@ -1,15 +1,21 @@
 const express = require('express');
 const redis = require('redis');
 const responseTime = require('response-time');
+const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
 
 const port = process.env.PORT || 3000;
-const redisHost = process.env.REDIS_HOST;
-const redisPort = process.env.REDIS_PORT;
-const redisUsername = process.env.REDIS_USERNAME;
-const redisPassword = process.env.REDIS_PASSWORD;
+const redisHost = db.HOSTNAME || process.env.REDIS_HOST;
+const redisPort = db.PORT || process.env.REDIS_PORT;
+const redisUsername = db.USERNAME || process.env.REDIS_USERNAME;
+const redisPassword = db.PASSWORD ||process.env.REDIS_PASSWORD;
+
+const ihsHost = process.env.IHS_HOST;
+const ihsNamespace = process.env.IHS_NAMESPACE;
+const ihsUsername = process.env.IHS_USERNAME;
+const ihsPassword = process.env.IHS_PASSWORD;
 
 const client = redis.createClient({
   legacyMode: true,
@@ -29,7 +35,8 @@ const isCached = (req, res, next) => {
     if (err) throw err;
 
     if (data !== null) {
-        console.log(`Serving Cache`)
+      console.log(`Serving Cache`)
+      data = JSON.parse(data);
       res.json({ status: 'success', fundname, data });
     } else {
         
@@ -38,20 +45,63 @@ const isCached = (req, res, next) => {
   });
 };
 
-const getFundData = async (fundname) => {
-  const data = await new Promise((resolve, reject) => {
-    client.get(fundname, (err, data) => {
-      if (err) reject(err);
-      resolve(data);
-    });
-  });
+const isAuthenticated = (req, res, next) => {
+  client.get('ihs_apikey', (err, data) => {
+    if (err) throw err;
 
+    if (data !== null) {
+      console.log(`API Key:Serving cache`)
+      res.locals.apikey = data
+      next();
+    } else {
+      console.log(`API Key: Reauthenticating and saving to cache`)
+      ihs_authenticateUser(ihsHost, ihsUsername, ihsPassword)
+      .then((results)=>{
+        client.setEx(`ihs_apikey`, 3500, results);
+        res.locals.apikey = results
+        next();
+      })
+      .catch(err=>{
+        res.status(400).json(err)
+      })
+    }
+  });
+};
+
+async function ihs_authenticateUser(host, username, password) {
+  const url = `${host}/apikey`;
+  const params = { username, password };
+  try {
+    const response = await axios.post(url, {}, { params });
+    return response.data;
+  } catch (error) {
+    throw {message: `IHS API Error: ${error.response.data.errorMessage}`}
+  }
+}
+
+async function ihs_getlatestfund(host, namespace, apikey, fundTicker) {
+  const url = `${host}/${namespace}/Fund/latest`;
+  const params = { limit:1, format:'JSON', fundTicker, apikey: apikey};
+
+  try {
+    const response = await axios.get(url, { params });
+    return response.data[0];
+  } catch (error) {
+    console.error(error)
+    throw {message: `IHS API Error: ${error.response.data.errorMessage}`}
+  }
+}
+
+const getFundData = async (fundname, apikey) => {
+  console.log('Getting fund data')
+  const data = await ihs_getlatestfund(ihsHost, ihsNamespace, apikey, fundname)
+  
   if (data !== null) {
+    console.log(`Setting Cache`)
+    client.setEx(fundname, 2, JSON.stringify(data));
     return data;
   } else {
-    const currentTime = new Date().toISOString();
-    console.log(`Setting Cache`)
-    client.setEx(fundname, 10, currentTime,);
+
     return currentTime;
   }
 };
@@ -64,13 +114,12 @@ app.get('/', (req, res) => {
   res.json({ status: 'Server running' });
 });
 
-app.get('/fund/:fundname', isCached, async (req, res) => {
+app.get('/fund/:fundname', isCached, isAuthenticated, async (req, res) => {
   const fundname = req.params.fundname;
-
   try {
-    const data = await getFundData(fundname);
+    const data = await getFundData(fundname, res.locals.apikey);
     res.json({ status: 'success', fundname, data });
-  } catch (err) {no
+  } catch (err) {
     res.json({ status: 'error', message: err.message });
   }
 });
@@ -87,5 +136,5 @@ app.use((err, req, res, next) => {
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
-  console.log(`client.isOpen: ${client.isOpen}`);
+  console.log(`Redis Client Open: ${client.isOpen}`);
 });
