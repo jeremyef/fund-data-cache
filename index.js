@@ -85,7 +85,13 @@ async function ihs_getlatestfund(host, namespace, apikey, fundTicker) {
 
   try {
     const response = await axios.get(url, { params });
-    return response.data[0];
+    if(Array.isArray(response.data) && response.data.length > 0){
+      return response.data[0];
+    }
+    else{
+
+      return {}
+    }
   } catch (error) {
     console.error(error)
     throw {message: `IHS API Error: ${error.response.data.errorMessage}`}
@@ -95,14 +101,12 @@ async function ihs_getlatestfund(host, namespace, apikey, fundTicker) {
 const getFundData = async (fundname, apikey) => {
   console.log('Getting fund data')
   const data = await ihs_getlatestfund(ihsHost, ihsNamespace, apikey, fundname)
-  
   if (data !== null) {
     console.log(`Setting Cache`)
     client.setEx(fundname, 2, JSON.stringify(data));
     return data;
   } else {
-
-    return currentTime;
+    return {};
   }
 };
 
