@@ -7,10 +7,10 @@ require('dotenv').config();
 const app = express();
 
 const port = process.env.PORT || 3000;
-const redisHost = db.HOSTNAME || process.env.REDIS_HOST;
-const redisPort = db.PORT || process.env.REDIS_PORT;
-const redisUsername = db.USERNAME || process.env.REDIS_USERNAME;
-const redisPassword = db.PASSWORD ||process.env.REDIS_PASSWORD;
+const redisHost = process.env.REDIS_HOST;
+const redisPort = process.env.REDIS_PORT;
+const redisUsername = process.env.REDIS_USERNAME;
+const redisPassword = process.env.REDIS_PASSWORD;
 
 const ihsHost = process.env.IHS_HOST;
 const ihsNamespace = process.env.IHS_NAMESPACE;
