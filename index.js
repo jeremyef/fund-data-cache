@@ -3,6 +3,7 @@ const NodeCache = require('node-cache');
 const responseTime = require('response-time');
 const axios = require('axios');
 const cron = require('node-cron')
+const moment = require('moment-timezone')
 require('dotenv').config();
 
 const app = express();
@@ -141,7 +142,11 @@ const isCached = (req, res, next) => {
 
   if(cachedData != undefined){
     console.log(`WEB: Serving Cache`)
-    res.json({ status: 'success', fundname, data: cachedData });
+
+    let price = {currency: cachedData.currency, value: cachedData.values}
+    let timeStamp = moment(cachedData.timeStamp).format('DD MMM yyyy, hh:mm:ss A')
+
+    res.json({ provider: "IHS", fundname, fundId: cachedData.fundSecurityId, price, timeStamp, status: 'success', message: ""});
   }
   else{
     next()
@@ -178,7 +183,10 @@ app.get('/fund/:fundname', isAllowed, isCached, isAuthenticated, async (req, res
     cache.set(fundname, data, 3);
 
 
-    res.json({ status: 'success', fundname, data });
+    let price = {currency: data.currency, value: data.values}
+    let timeStamp = moment(data.timeStamp).format('DD MMM yyyy, hh:mm:ss A')
+
+    res.json({ provider: "IHS", fundname, fundId: data.fundSecurityId, price, timeStamp, status: 'success', message: ""});
   } catch (err) {
     res.json({ status: 'error', message: err.message });
   }
