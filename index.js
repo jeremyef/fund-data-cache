@@ -146,7 +146,7 @@ const isCached = (req, res, next) => {
     let price = {currency: cachedData.currency, value: cachedData.values}
     let timeStamp = moment(cachedData.timeStamp).format('DD MMM yyyy, hh:mm:ss A')
 
-    res.json({ provider: "IHS", fundname, fundId: cachedData.fundSecurityId, price, timeStamp, status: 'success', message: ""});
+    res.json({ provider: "IHS", fundTicker: fundname, ISIN: cachedData.fundSecurityId, price, timeStamp, status: 'success', message: ""});
   }
   else{
     next()
@@ -186,7 +186,7 @@ app.get('/fund/:fundname', isAllowed, isCached, isAuthenticated, async (req, res
     let price = {currency: data.currency, value: data.values}
     let timeStamp = moment(data.timeStamp).format('DD MMM yyyy, hh:mm:ss A')
 
-    res.json({ provider: "IHS", fundname, fundId: data.fundSecurityId, price, timeStamp, status: 'success', message: ""});
+    res.json({ provider: "IHS", fundTicker: fundname, ISIN: data.fundSecurityId, price, timeStamp, status: 'success', message: ""});
   } catch (err) {
     res.json({ status: 'error', message: err.message });
   }
