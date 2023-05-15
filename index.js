@@ -145,8 +145,7 @@ const isCached = (req, res, next) => {
     console.log(`WEB: Serving Cache`)
 
     let price = {currency: cachedData.currency, value: cachedData.values}
-    let timeStamp = moment(cachedData.timeStamp).format('DD MMM yyyy, hh:mm:ss A')
-
+    let timeStamp = moment(cachedData.timeStamp)
     res.json({ provider: "IHS", fundTicker: fundname, ISIN: cachedData.fundSecurityId, price, timeStamp, status: 'success', message: ""});
   }
   else{
