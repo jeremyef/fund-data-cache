@@ -188,7 +188,7 @@ app.get('/fund/:fundname', isAllowed, isCached, isAuthenticated, async (req, res
 
 
     let price = {currency: data.currency, value: data.values}
-    let timeStamp = moment(data.timeStamp).format('DD MMM yyyy, hh:mm:ss A')
+    let timeStamp = moment(cachedData.timeStamp)
 
     res.json({ provider: "IHS", fundTicker: fundname, ISIN: data.fundSecurityId, price, timeStamp, status: 'success', message: ""});
   } catch (err) {
