@@ -172,7 +172,7 @@ app.use(function (req, res, next) {
 });
 // Enable CORS for the app
 app.use(cors({
-  origin: ['http://localhost', 'https://localhost', /^(https?:\/\/)?localhost(:\d+)?$/, /^(https?:\/\/)?([a-z0-9]+\.)*ondigitalocean\.app(:\d+)?$/i, /^(https?:\/\/)?([a-z0-9]+\.)*ferrer\.au(:\d+)?$/i]
+  origin: ['http://localhost', 'https://localhost', /^(https?:\/\/)?localhost(:\d+)?$/, /^(https?:\/\/)?([a-z0-9]+\.)*ondigitalocean\.app$/i, /^(https?:\/\/)?([a-z0-9]+\.)*ferrer\.au$/i]
 }));
 
 app.get('/', (req, res) => {
