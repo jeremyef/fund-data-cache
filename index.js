@@ -4,6 +4,7 @@ const responseTime = require('response-time');
 const axios = require('axios');
 const cron = require('node-cron')
 const moment = require('moment-timezone')
+const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
@@ -169,6 +170,10 @@ app.use(function (req, res, next) {
   res.header("Content-Type",'application/json');
   next();
 });
+// Enable CORS for the app
+app.use(cors({
+  origin: ['http://localhost', 'https://localhost', /^(https?:\/\/)?localhost(:\d+)?$/, /^(https?:\/\/)?([a-z0-9]+\.)*ondigitalocean\.app(:\d+)?$/i, /^(https?:\/\/)?([a-z0-9]+\.)*ferrer\.au(:\d+)?$/i]
+}));
 
 app.get('/', (req, res) => {
   res.json({ status: 'Server running' });
