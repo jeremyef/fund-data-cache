@@ -32,14 +32,14 @@ function startup(){
 
     for(let i = 0; i < validCodes.length;i++){
       console.log(`\tSCHEDULER: Adding scheduled job - Update Fund Data for ${validCodes[i]}`)
-      cron.schedule('*/3 * * * * *', ()=>{
+      cron.schedule('*/1 * * * * *', ()=>{
         try{
           const fundcode = validCodes[i]
           const cachedKey = cache.get('ihs_apikey')
     
           getFundData(fundcode,cachedKey)
             .then(results=>{
-              cache.set(fundcode, results, 1);
+              cache.set(fundcode, results, 2);
               console.log(`SCHEDULER: Funds data for ${fundcode} refreshed`)
             })
             .catch(err=>{
@@ -184,7 +184,7 @@ app.get('/fund/:fundname', isAllowed, isCached, isAuthenticated, async (req, res
   try {
     const data = await getFundData(fundname, res.locals.apikey);
     console.log(`CACHE: Setting Cache`)
-    cache.set(fundname, data, 1);
+    cache.set(fundname, data, 2);
 
 
     let price = {currency: data.currency, value: data.values}
