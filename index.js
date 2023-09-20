@@ -17,30 +17,36 @@ const ihsNamespace = process.env.IHS_NAMESPACE;
 const ihsUsername = process.env.IHS_USERNAME;
 const ihsPassword = process.env.IHS_PASSWORD;
 
-const validCodes = process.env.VALID_CODES.split(',')
+const solactiveHost = process.env.SOLACTIVE_HOST
+const solactiveUsername = process.env.SOLACTIVE_USERNAME;
+const solactivePassword = process.env.SOLACTIVE_PASSWORD;
+
+const ihsvalidCodes = process.env.VALID_CODES.split(',')
+const solactivevalidCodes = process.env.SOLACTIVE_ISINS.split(',')
 
 // Generate and cache and API key on startup
 // There will always be an API key in cache from startup
 startup()
 
 function startup(){
+  // Startup Call fo IHS
   ihs_authenticateUser(ihsHost, ihsUsername, ihsPassword)
   .then((results)=>{
     cache.set(`ihs_apikey`, results, 3500);
-    console.log('STARTUP: API Key Cached')
-    console.log('STARTUP: Creating scheduled tasks')
+    console.log('STARTUP: IHS API Key Cached')
+    console.log('STARTUP: Creating IHS scheduled tasks')
 
-    for(let i = 0; i < validCodes.length;i++){
-      console.log(`\tSCHEDULER: Adding scheduled job - Update Fund Data for ${validCodes[i]}`)
+    for(let i = 0; i < ihsvalidCodes.length;i++){
+      console.log(`\tSCHEDULER: Adding IHS scheduled job - Update Fund Data for ${ihsvalidCodes[i]}`)
       cron.schedule('*/1 * * * * *', ()=>{
         try{
-          const fundcode = validCodes[i]
+          const fundcode = ihsvalidCodes[i]
           const cachedKey = cache.get('ihs_apikey')
     
-          getFundData(fundcode,cachedKey)
+          ihs_getFundData(fundcode,cachedKey)
             .then(results=>{
               cache.set(fundcode, results, 2);
-              console.log(`SCHEDULER: Funds data for ${fundcode} refreshed`)
+              console.log(`SCHEDULER: Funds data from IHS for ${fundcode} refreshed`)
             })
             .catch(err=>{
               throw err
@@ -51,13 +57,13 @@ function startup(){
         }
       })
     }
-    console.log(`\tSCHEDULER: Adding scheduled job - Update API Key`)
+    console.log(`\tSCHEDULER: Adding IHS scheduled job - Update API Key`)
     cron.schedule('*/55 * * * *', ()=>{
       try{
         ihs_authenticateUser(ihsHost, ihsUsername, ihsPassword)
           .then(results=>{
             cache.set(`ihs_apikey`, results, 3500);
-            console.log('SCHEDULER: API Key Cached')
+            console.log('SCHEDULER: IHS API Key Cached')
           })
           .catch(err=>{
             throw err
@@ -72,6 +78,8 @@ function startup(){
     console.log(err)
     process.exit()
   })
+
+  // Startup Calls for Solactive
 }
 
 async function ihs_authenticateUser(host, username, password) {
@@ -103,7 +111,7 @@ async function ihs_getlatestfund(host, namespace, apikey, fundTicker) {
   }
 };
 
-const isAuthenticated = (req, res, next) => {
+const ihs_isAuthenticated = (req, res, next) => {
   const cachedKey = cache.get('ihs_apikey')
 
   if(cachedKey) {
@@ -125,10 +133,10 @@ const isAuthenticated = (req, res, next) => {
   }
 };
 
-const isAllowed = (req, res, next) => {
+const ihs_isAllowed = (req, res, next) => {
   const fundname = req.params.fundname;
 
-  if(!validCodes.includes(fundname)){
+  if(!ihsvalidCodes.includes(fundname)){
     res.status(404)
     res.json({ status: 'not found' });
   }
@@ -137,7 +145,7 @@ const isAllowed = (req, res, next) => {
   }
 };
 
-const isCached = (req, res, next) => {
+const ihs_isCached = (req, res, next) => {
   const fundname = req.params.fundname;
   const cachedData = cache.get(fundname);
 
@@ -153,7 +161,7 @@ const isCached = (req, res, next) => {
   }
 };
 
-const getFundData = async (fundname, apikey) => {
+const ihs_getFundData = async (fundname, apikey) => {
   const data = await ihs_getlatestfund(ihsHost, ihsNamespace, apikey, fundname)
   if (data !== null) {
     return data;
@@ -161,6 +169,68 @@ const getFundData = async (fundname, apikey) => {
     return {};
   }
 };
+
+async function solactive_getlatestfund(host, fundTicker, username) {
+  const url = `${host}/api/rest/v1/indices/${username}/${fundTicker}/history`;
+  const params = {
+    auth: {
+      username: `${solactiveUsername}`,
+      password: `${solactivePassword}`
+    }
+  };
+
+  try {
+    const response = await axios.get(url, { params });
+    if(Array.isArray(response.data) && response.data.length > 0){
+      return response.data[0];
+    }
+    else{
+      return {}
+    }
+  } catch (error) {
+    console.error(error)
+    throw {message: `Solactive API Error: ${error.response.data.errorMessage}`}
+  }
+};
+
+const solactive_getFundData = async (fundname, username) => {
+  const data = await solactive_getlatestfund(solactiveHost, fundname, username)
+  if (data !== null) {
+    return data;
+  } else {
+    return {};
+  }
+};
+
+const solactive_isAllowed = (req, res, next) => {
+  const fundname = req.params.fundname;
+
+  if(!solactivevalidCodes.includes(fundname)){
+    res.status(404)
+    res.json({ status: 'not found' });
+  }
+  else{
+    next()
+  }
+};
+
+const solactive_isCached = (req, res, next) => {
+  const fundname = req.params.fundname;
+  const cachedData = cache.get(fundname);
+
+  if(cachedData != undefined){
+    console.log(`WEB: Serving Cache`)
+
+    let price = {currency: cachedData.currency, value: cachedData.values}
+    let timeStamp = moment(cachedData.timeStamp)
+    res.json({ provider: "Solactive", fundTicker: fundname, ISIN: cachedData.fundSecurityId, price, timeStamp, status: 'success', message: ""});
+  }
+  else{
+    next()
+  }
+};
+
+
 
 app.use(responseTime());
 app.use(express.json());
@@ -178,11 +248,18 @@ app.get('/', (req, res) => {
   res.json({ status: 'Server running' });
 });
 
-app.get('/fund/:fundname', isAllowed, isCached, isAuthenticated, async (req, res) => {
+// Router for IHS data
+// Forwards the previous route to the new route
+app.get('/fund/:fundname', async (req, res, next) => {
+  req.fundname = req.params.fundname
+  res.redirect(`/ihs/fund/${req.params.fundname}`)
+});
+// New route that has the provider name in the path.
+app.get('/ihs/fund/:fundname', ihs_isAllowed, ihs_isCached, ihs_isAuthenticated, async (req, res) => {
 
-  const fundname = req.params.fundname;
+  const fundname = (req.fundname.length > 0 ? req.fundname : req.params.fundname);
   try {
-    const data = await getFundData(fundname, res.locals.apikey);
+    const data = await solactive_getFundData(fundname, res.locals.apikey);
     console.log(`CACHE: Setting Cache`)
     cache.set(fundname, data, 2);
 
@@ -191,6 +268,25 @@ app.get('/fund/:fundname', isAllowed, isCached, isAuthenticated, async (req, res
     let timeStamp = moment(cachedData.timeStamp)
 
     res.json({ provider: "IHS", fundTicker: fundname, ISIN: data.fundSecurityId, price, timeStamp, status: 'success', message: ""});
+  } catch (err) {
+    res.json({ status: 'error', message: err.message });
+  }
+});
+
+// Router for Solactive data
+app.get('/solactive/fund/:fundname', solactive_isAllowed, solactive_isCached, async (req, res) => {
+
+  const fundname = req.params.fundname;
+  try {
+    const data = await ihs_getFundData(fundname, res.locals.apikey);
+    console.log(`CACHE: Setting Cache`)
+    cache.set(fundname, data, 2);
+
+
+    let price = {currency: data.currency, value: data.values}
+    let timeStamp = moment(cachedData.timeStamp)
+
+    res.json({ provider: "Solactive", fundTicker: fundname, ISIN: data.fundSecurityId, price, timeStamp, status: 'success', message: ""});
   } catch (err) {
     res.json({ status: 'error', message: err.message });
   }
