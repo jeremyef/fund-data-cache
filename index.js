@@ -39,7 +39,7 @@ function startup(){
     
           getFundData(fundcode,cachedKey)
             .then(results=>{
-              cache.set(fundcode, results, 3);
+              cache.set(fundcode, results, 5);
               console.log(`SCHEDULER: Funds data for ${fundcode} refreshed`)
             })
             .catch(err=>{
@@ -185,7 +185,7 @@ app.get('/fund/:fundname', isAllowed, isCached, isAuthenticated, async (req, res
   try {
     const data = await getFundData(fundname, res.locals.apikey);
     console.log(`CACHE: Setting Cache`)
-    cache.set(fundname, data, 2);
+    cache.set(fundname, data, 5);
 
 
     let price = {currency: data.currency, value: data.values}
