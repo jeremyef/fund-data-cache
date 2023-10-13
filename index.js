@@ -172,7 +172,16 @@ app.use(function (req, res, next) {
 });
 // Enable CORS for the app
 app.use(cors({
-  origin: ['http://localhost', 'https://localhost', /^(https?:\/\/)?localhost(:\d+)?$/, /^(https?:\/\/)?([a-z0-9]+\.)*ondigitalocean\.app$/i, /^(https?:\/\/(?:.+\.)?ferrer\.au(?::\d{1,5})?)$/i, /^(https?:\/\/)?([a-z0-9]+\.)*ferrer\.au$/i, /^(https?:\/\/)?([\w-]+\.)+acquia-sites\.com(:\d+)?$/i]
+  origin: [
+    'http://localhost', 
+    'https://localhost', 
+    /^(https?:\/\/)?localhost(:\d+)?$/, 
+    /^(https?:\/\/)?([a-z0-9]+\.)*ondigitalocean\.app$/i, 
+    /^(https?:\/\/(?:.+\.)?ferrer\.au(?::\d{1,5})?)$/i, 
+    /^(https?:\/\/)?([a-z0-9]+\.)*ferrer\.au$/i, 
+    /^(https?:\/\/)?([\w-]+\.)+acquia-sites\.com(:\d+)?$/i,
+    /^(https?:\/\/)?([\w-]+\.)+fidante\.com(:\d+)?$/i
+  ]
 }));
 
 app.get('/', (req, res) => {
