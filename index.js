@@ -39,7 +39,7 @@ function startup(){
     
           getFundData(fundcode,cachedKey)
             .then(results=>{
-              cache.set(fundcode, results, 2);
+              cache.set(fundcode, results, 3);
               console.log(`SCHEDULER: Funds data for ${fundcode} refreshed`)
             })
             .catch(err=>{
@@ -149,6 +149,7 @@ const isCached = (req, res, next) => {
     res.json({ provider: "IHS", fundTicker: fundname, ISIN: cachedData.fundSecurityId, price, timeStamp, status: 'success', message: ""});
   }
   else{
+    console.log(`WEB: Cache Missed`)
     next()
   }
 };
@@ -171,7 +172,7 @@ app.use(function (req, res, next) {
 });
 // Enable CORS for the app
 app.use(cors({
-  origin: ['http://localhost', 'https://localhost', /^(https?:\/\/)?localhost(:\d+)?$/, /^(https?:\/\/)?([a-z0-9]+\.)*ondigitalocean\.app$/i, /^(https?:\/\/(?:.+\.)?ferrer\.au(?::\d{1,5})?)$/i, /^(https?:\/\/)?([a-z0-9]+\.)*ferrer\.au$/i]
+  origin: ['http://localhost', 'https://localhost', /^(https?:\/\/)?localhost(:\d+)?$/, /^(https?:\/\/)?([a-z0-9]+\.)*ondigitalocean\.app$/i, /^(https?:\/\/(?:.+\.)?ferrer\.au(?::\d{1,5})?)$/i, /^(https?:\/\/)?([a-z0-9]+\.)*ferrer\.au$/i, /^(https?:\/\/)?([\w-]+\.)+acquia-sites\.com(:\d+)?$/i]
 }));
 
 app.get('/', (req, res) => {
