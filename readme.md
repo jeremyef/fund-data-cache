@@ -17,7 +17,7 @@ To install and run the application, follow these steps:
    - `IHS_NAMESPACE`: The namespace of the IHS service.
    - `IHS_USERNAME`: The username for authentication with the IHS service.
    - `IHS_PASSWORD`: The password for authentication with the IHS service.
-   - `VALID_CODES`: A comma-separated list of valid fund security ids.
+   - `VALID_CODES`: A comma-separated list of valid fund security ids. (i.e. AU60HOW10006)
 
 ## Usage
 
