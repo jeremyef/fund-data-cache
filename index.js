@@ -85,9 +85,9 @@ async function ihs_authenticateUser(host, username, password) {
   }
 };
 
-async function ihs_getlatestfund(host, namespace, apikey, fundTicker) {
+async function ihs_getlatestfund(host, namespace, apikey, fundSecurityId) {
   const url = `${host}/${namespace}/Fund/latest`;
-  const params = { limit:1, format:'JSON', fundTicker, apikey: apikey};
+  const params = { limit:1, format:'JSON', fundSecurityId, apikey: apikey};
 
   try {
     const response = await axios.get(url, { params });
@@ -126,9 +126,9 @@ const isAuthenticated = (req, res, next) => {
 };
 
 const isAllowed = (req, res, next) => {
-  const fundname = req.params.fundname;
+  const fundSecurityId = req.params.fundSecurityId;
 
-  if(!validCodes.includes(fundname)){
+  if(!validCodes.includes(fundSecurityId)){
     res.status(404)
     res.json({ status: 'not found' });
   }
@@ -138,15 +138,15 @@ const isAllowed = (req, res, next) => {
 };
 
 const isCached = (req, res, next) => {
-  const fundname = req.params.fundname;
-  const cachedData = cache.get(fundname);
+  const fundSecurityId = req.params.fundSecurityId;
+  const cachedData = cache.get(fundSecurityId);
 
   if(cachedData != undefined){
     console.log(`WEB: Serving Cache`)
 
     let price = {currency: cachedData.currency, value: cachedData.values}
     let timeStamp = moment(cachedData.timeStamp)
-    res.json({ provider: "IHS", fundTicker: fundname, ISIN: cachedData.fundSecurityId, price, timeStamp, status: 'success', message: ""});
+    res.json({ provider: "IHS", fundTicker: cachedData.fundTicker, ISIN: cachedData.fundSecurityId, price, timeStamp, status: 'success', message: ""});
   }
   else{
     console.log(`WEB: Cache Missed`)
@@ -154,8 +154,8 @@ const isCached = (req, res, next) => {
   }
 };
 
-const getFundData = async (fundname, apikey) => {
-  const data = await ihs_getlatestfund(ihsHost, ihsNamespace, apikey, fundname)
+const getFundData = async (fundSecurityId, apikey) => {
+  const data = await ihs_getlatestfund(ihsHost, ihsNamespace, apikey, fundSecurityId)
   if (data !== null) {
     return data;
   } else {
@@ -188,19 +188,19 @@ app.get('/', (req, res) => {
   res.json({ status: 'Server running' });
 });
 
-app.get('/fund/:fundname', isAllowed, isCached, isAuthenticated, async (req, res) => {
+app.get('/fund/:fundSecurityId', isAllowed, isCached, isAuthenticated, async (req, res) => {
 
-  const fundname = req.params.fundname;
+  const fundSecurityId = req.params.fundSecurityId;
   try {
-    const data = await getFundData(fundname, res.locals.apikey);
+    const data = await getFundData(fundSecurityId, res.locals.apikey);
     console.log(`CACHE: Setting Cache`)
-    cache.set(fundname, data, 5);
+    cache.set(fundSecurityId, data, 5);
 
 
     let price = {currency: data.currency, value: data.values}
     let timeStamp = moment(cachedData.timeStamp)
 
-    res.json({ provider: "IHS", fundTicker: fundname, ISIN: data.fundSecurityId, price, timeStamp, status: 'success', message: ""});
+    res.json({ provider: "IHS", fundTicker: data.fundTicker, ISIN: data.fundSecurityId, price, timeStamp, status: 'success', message: ""});
   } catch (err) {
     res.json({ status: 'error', message: err.message });
   }
