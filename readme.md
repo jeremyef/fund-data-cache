@@ -17,7 +17,7 @@ To install and run the application, follow these steps:
    - `IHS_NAMESPACE`: The namespace of the IHS service.
    - `IHS_USERNAME`: The username for authentication with the IHS service.
    - `IHS_PASSWORD`: The password for authentication with the IHS service.
-   - `VALID_CODES`: A comma-separated list of valid fund codes.
+   - `VALID_CODES`: A comma-separated list of valid fund codes. Refer to FundTickerIds, not FundTicker.
 
 ## Usage
 
@@ -33,9 +33,9 @@ The application will start a server and listen on the specified port (default: 3
 
 - `GET /`: Returns a JSON response indicating that the server is running.
 
-- `GET /fund/:fundname`: Retrieves the latest fund data for the specified `fundname`. This endpoint will try to respond with a value from the local cache or will make a call to the IHS API.
+- `GET /fund/:fundTickerId`: Retrieves the latest fund data for the specified `fundTickerId`. This endpoint will try to respond with a value from the local cache or will make a call to the IHS API.
 
-  - The `fundname` parameter should be replaced with the actual fund code you want to retrieve data for.
+  - The `fundTickerId` parameter should be replaced with the actual fund ticker id you want to retrieve data for.
 
   - The response will include information about the fund, such as the provider, fund ticker, ISIN, price, timestamp, status, and message.
 
